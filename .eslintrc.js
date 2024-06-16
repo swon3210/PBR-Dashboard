@@ -46,6 +46,7 @@ module.exports = {
     'import/newline-after-import': 'error',
     'react/jsx-uses-react': 'error',
     'react/react-in-jsx-scope': 'error',
+    'no-console': 'off',
     'unicorn/filename-case': [
       'error',
       {
@@ -63,6 +64,7 @@ module.exports = {
     '@typescript-eslint/no-unnecessary-condition': 'off', // remove when no static data is used
     '@typescript-eslint/require-await': 'off', // Server Actions require async flag always
     '@typescript-eslint/prefer-nullish-coalescing': 'off', // personal style
+    '@typescript-eslint/explicit-function-return-type': 'off',
     'import/no-default-export': 'off', // Next.js components must be exported as default
     'import/no-extraneous-dependencies': 'off', // conflict with sort-imports plugin
     'import/order': 'off', // using custom sort plugin
