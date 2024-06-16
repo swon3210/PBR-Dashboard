@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { Skeleton } from '@mui/material';
 // import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -16,10 +17,6 @@ import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 
 import { useSelection } from '@/hooks/use-selection';
-
-function noop(): void {
-  // do nothing
-}
 
 export interface Company {
   id: string;
@@ -81,17 +78,46 @@ const dummyCompanies: Company[] = [
 ];
 
 interface CompaniesTableProps {
+  loading?: boolean;
   count?: number;
   page?: number;
   rows?: Company[];
   rowsPerPage?: number;
+  onPageChange: (page: number) => void;
 }
 
+const TableRowsLoader = ({ rowsCount }: { rowsCount: number }) => {
+  console.log({
+    rowsCount,
+  });
+
+  return Array(rowsCount)
+    .fill(0)
+    .map((_, index) => (
+      <TableRow key={index}>
+        <TableCell component="th" scope="row">
+          <Skeleton animation="wave" variant="text" />
+        </TableCell>
+        <TableCell>
+          <Skeleton animation="wave" variant="text" />
+        </TableCell>
+        {/* <TableCell>
+          <Skeleton animation="wave" variant="text" />
+        </TableCell>
+        <TableCell>
+          <Skeleton animation="wave" variant="text" />
+        </TableCell> */}
+      </TableRow>
+    ));
+};
+
 export function CompaniesTable({
+  loading,
   count = dummyCompanies.length,
   rows = dummyCompanies,
   page = 0,
   rowsPerPage = 10,
+  onPageChange,
 }: CompaniesTableProps): React.JSX.Element {
   const rowIds = React.useMemo(() => {
     return rows.map((customer) => customer.id);
@@ -104,10 +130,42 @@ export function CompaniesTable({
 
   const paginatedRows = rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
+  if (loading) {
+    return (
+      <Card>
+        <Box sx={{ overflowX: 'auto' }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={selectedAll}
+                    indeterminate={selectedSome}
+                    onChange={(event) => {
+                      if (event.target.checked) {
+                        selectAll();
+                      } else {
+                        deselectAll();
+                      }
+                    }}
+                  />
+                </TableCell>
+                <TableCell>회사명</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRowsLoader rowsCount={10} />
+            </TableBody>
+          </Table>
+        </Box>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <Box sx={{ overflowX: 'auto' }}>
-        <Table sx={{ minWidth: '800px' }}>
+        <Table>
           <TableHead>
             <TableRow>
               <TableCell padding="checkbox">
@@ -160,7 +218,9 @@ export function CompaniesTable({
       <TablePagination
         component="div"
         count={count}
-        onPageChange={noop}
+        onPageChange={(_, pageIndex) => {
+          onPageChange(pageIndex);
+        }}
         page={page}
         rowsPerPage={rowsPerPage}
         rowsPerPageOptions={[]}
