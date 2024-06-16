@@ -15,12 +15,12 @@ import type { ApexOptions } from 'apexcharts';
 
 import { Chart } from '@/components/core/chart';
 
-export interface SalesProps {
+export interface MainChartProps {
   chartSeries: { name: string; data: number[] }[];
   sx?: SxProps;
 }
 
-export function Sales({ chartSeries, sx }: SalesProps): React.JSX.Element {
+export function MainChart({ chartSeries, sx }: MainChartProps): React.JSX.Element {
   const chartOptions = useChartOptions();
 
   return (
@@ -31,15 +31,15 @@ export function Sales({ chartSeries, sx }: SalesProps): React.JSX.Element {
             Sync
           </Button>
         }
-        title="Sales"
+        title="Main Chart"
       />
       <CardContent>
-        <Chart height={350} options={chartOptions} series={chartSeries} type="line" width="100%" />
+        <Chart height={435} options={chartOptions} series={chartSeries} type="line" width="100%" />
       </CardContent>
       <Divider />
       <CardActions sx={{ justifyContent: 'flex-end' }}>
         <Button color="inherit" endIcon={<ArrowRightIcon fontSize="var(--icon-fontSize-md)" />} size="small">
-          Overview
+          전체보기
         </Button>
       </CardActions>
     </Card>
@@ -64,7 +64,7 @@ function useChartOptions(): ApexOptions {
       curve: 'smooth',
     },
     title: {
-      text: 'Product Trends by Month',
+      text: 'Trends',
       align: 'left',
     },
     grid: {
