@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useMediaQuery, useTheme } from '@mui/material';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
@@ -23,6 +24,10 @@ export interface MainChartProps {
 export function MainChart({ chartSeries, sx }: MainChartProps): React.JSX.Element {
   const chartOptions = useChartOptions();
 
+  const theme = useTheme();
+
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   return (
     <Card sx={sx}>
       <CardHeader
@@ -34,7 +39,7 @@ export function MainChart({ chartSeries, sx }: MainChartProps): React.JSX.Elemen
         title="Main Chart"
       />
       <CardContent>
-        <Chart height={435} options={chartOptions} series={chartSeries} type="line" width="100%" />
+        <Chart height={isMobile ? 300 : 435} options={chartOptions} series={chartSeries} type="line" width="100%" />
       </CardContent>
       <Divider />
       <CardActions sx={{ justifyContent: 'flex-end' }}>
