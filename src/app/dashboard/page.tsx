@@ -64,7 +64,6 @@ export default function Page() {
             id: name,
             name,
           }))}
-          count={companyNames.length}
           page={page}
           rowsPerPage={10}
           onPageChange={setPage}

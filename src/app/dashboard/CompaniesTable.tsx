@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Skeleton } from '@mui/material';
+import { OutlinedInput, Skeleton } from '@mui/material';
 // import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -79,7 +79,6 @@ const dummyCompanies: Company[] = [
 
 interface CompaniesTableProps {
   loading?: boolean;
-  count?: number;
   page?: number;
   rows?: Company[];
   rowsPerPage?: number;
@@ -87,10 +86,6 @@ interface CompaniesTableProps {
 }
 
 const TableRowsLoader = ({ rowsCount }: { rowsCount: number }) => {
-  console.log({
-    rowsCount,
-  });
-
   return Array(rowsCount)
     .fill(0)
     .map((_, index) => (
@@ -113,12 +108,13 @@ const TableRowsLoader = ({ rowsCount }: { rowsCount: number }) => {
 
 export function CompaniesTable({
   loading,
-  count = dummyCompanies.length,
   rows = dummyCompanies,
   page = 0,
   rowsPerPage = 10,
   onPageChange,
 }: CompaniesTableProps): React.JSX.Element {
+  const [searchText, setSearchText] = React.useState('');
+
   const rowIds = React.useMemo(() => {
     return rows.map((customer) => customer.id);
   }, [rows]);
@@ -128,96 +124,84 @@ export function CompaniesTable({
   const selectedSome = (selected?.size ?? 0) > 0 && (selected?.size ?? 0) < rows.length;
   const selectedAll = rows.length > 0 && selected?.size === rows.length;
 
+  const filteredRows = rows.filter((row) => row.name.toLowerCase().includes(searchText.toLowerCase()));
   const paginatedRows = rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
-  if (loading) {
-    return (
-      <Card>
-        <Box sx={{ overflowX: 'auto' }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedAll}
-                    indeterminate={selectedSome}
-                    onChange={(event) => {
-                      if (event.target.checked) {
-                        selectAll();
-                      } else {
-                        deselectAll();
-                      }
-                    }}
-                  />
-                </TableCell>
-                <TableCell>회사명</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              <TableRowsLoader rowsCount={10} />
-            </TableBody>
-          </Table>
-        </Box>
-      </Card>
-    );
-  }
+  const paginatedFilteredRows = paginatedRows.filter((row) =>
+    row.name.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      selectAll();
+    } else {
+      deselectAll();
+    }
+  };
+
+  const handleSearchInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchText(event.target.value);
+  };
 
   return (
-    <Card>
-      <Box sx={{ overflowX: 'auto' }}>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ overflowX: 'auto', flexGrow: '1' }}>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell padding="checkbox">
-                <Checkbox
-                  checked={selectedAll}
-                  indeterminate={selectedSome}
-                  onChange={(event) => {
-                    if (event.target.checked) {
-                      selectAll();
-                    } else {
-                      deselectAll();
-                    }
-                  }}
+                <Checkbox checked={selectedAll} indeterminate={selectedSome} onChange={handleCheckboxChange} />
+              </TableCell>
+              <TableCell>
+                <OutlinedInput
+                  defaultValue=""
+                  fullWidth
+                  size="small"
+                  placeholder="회사명"
+                  value={searchText}
+                  onChange={handleSearchInputChange}
                 />
               </TableCell>
-              <TableCell>회사명</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedRows.map((row) => {
-              const isSelected = selected?.has(row.id);
+            {loading ? (
+              <TableRowsLoader rowsCount={10} />
+            ) : (
+              paginatedFilteredRows.map((row) => {
+                const isSelected = selected?.has(row.id);
 
-              return (
-                <TableRow hover key={row.id} selected={isSelected}>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={isSelected}
-                      onChange={(event) => {
-                        if (event.target.checked) {
-                          selectOne(row.id);
-                        } else {
-                          deselectOne(row.id);
-                        }
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
-                      {/* <Avatar /> */}
-                      <Typography variant="subtitle2">{row.name}</Typography>
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                return (
+                  <TableRow hover key={row.id} selected={isSelected}>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={isSelected}
+                        onChange={(event) => {
+                          if (event.target.checked) {
+                            selectOne(row.id);
+                          } else {
+                            deselectOne(row.id);
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
+                        {/* <Avatar /> */}
+                        <Typography variant="subtitle2">{row.name}</Typography>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </Box>
       <Divider />
       <TablePagination
         component="div"
-        count={count}
+        count={filteredRows.length}
         onPageChange={(_, pageIndex) => {
           onPageChange(pageIndex);
         }}
