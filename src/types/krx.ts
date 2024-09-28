@@ -1,6 +1,6 @@
 import zod from 'zod';
 
-export type KRXItem = zod.infer<typeof krxCrawlingResponseSchema>['output'][number];
+export type KrxItem = zod.infer<typeof krxCrawlingResponseSchema>['output'][number];
 
 export const krxCrawlingResponseSchema = zod.object({
   output: zod.array(

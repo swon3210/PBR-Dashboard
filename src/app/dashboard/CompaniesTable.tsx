@@ -24,59 +24,6 @@ export interface Company {
   name: string;
 }
 
-const dummyCompanies: Company[] = [
-  {
-    id: 'USR-010',
-    name: 'Alcides Antonio',
-    avatar: '/assets/avatar-10.png',
-  },
-  {
-    id: 'USR-009',
-    name: 'Marcus Finn',
-    avatar: '/assets/avatar-9.png',
-  },
-  {
-    id: 'USR-008',
-    name: 'Jie Yan',
-    avatar: '/assets/avatar-8.png',
-  },
-  {
-    id: 'USR-007',
-    name: 'Nasimiyu Danai',
-    avatar: '/assets/avatar-7.png',
-  },
-  {
-    id: 'USR-006',
-    name: 'Iulia Albu',
-    avatar: '/assets/avatar-6.png',
-  },
-  {
-    id: 'USR-005',
-    name: 'Katarina Smith',
-    avatar: '/assets/avatar-5.png',
-  },
-  {
-    id: 'USR-004',
-    name: 'Khalid Mughal',
-    avatar: '/assets/avatar-4.png',
-  },
-  {
-    id: 'USR-003',
-    name: 'Denzel Washington',
-    avatar: '/assets/avatar-3.png',
-  },
-  {
-    id: 'USR-002',
-    name: 'Morgan Freeman',
-    avatar: '/assets/avatar-2.png',
-  },
-  {
-    id: 'USR-001',
-    name: 'Tom Cruise',
-    avatar: '/assets/avatar-1.png',
-  },
-];
-
 interface CompaniesTableProps {
   loading?: boolean;
   page?: number;
@@ -108,7 +55,7 @@ const TableRowsLoader = ({ rowsCount }: { rowsCount: number }) => {
 
 export function CompaniesTable({
   loading,
-  rows = dummyCompanies,
+  rows = [],
   page = 0,
   rowsPerPage = 10,
   onPageChange,

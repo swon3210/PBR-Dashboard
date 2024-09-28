@@ -1,15 +1,17 @@
+/* eslint-disable no-useless-escape */
 // 출처
 // http://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0201020502
 
+import type { Company } from '@/app/dashboard/CompaniesTable';
 import dayjs from 'dayjs';
 
 import { companySchema } from '@/types/companies';
-import { infoSchema, InfoType } from '@/types/info';
+import { infoRecordSchema } from '@/types/info';
+import type { InfoRecord, InfoType } from '@/types/info';
 import { krxCrawlingResponseSchema } from '@/types/krx';
+import type { KrxItem } from '@/types/krx';
 
-import { COLLECTION, getItems, setItems } from '../db';
-import { Company } from '@/app/dashboard/CompaniesTable';
-import { z } from 'zod';
+import { getItems, getItemsWithDocId, setItems, setItemsWithDocId } from '../db';
 
 // TODO : companies 정보는 하나의 문서에서 가져오도록 수정
 
@@ -42,114 +44,165 @@ const getDataFromKRX = async (targetDateString: string) => {
   return parsedData;
 };
 
+// krx 에서 크롤링한 결과를 기반으로 각 회사의 기간별 info 수치를 기록
+const setCompanyInfo = async ({
+  infoType,
+  krxItems,
+  companies,
+  targetDateString,
+}: {
+  infoType: InfoType;
+  krxItems: KrxItem[];
+  companies: Company[];
+  targetDateString: string;
+}) => {
+  const promises = companies.map(async ({ name }) => {
+    const records: InfoRecord[] = (await getItemsWithDocId(infoType, name, 'records')).map((record) =>
+      infoRecordSchema.parse(record)
+    );
+
+    const prevRecordIndex = records.findIndex((record) => record.id === targetDateString);
+    const targetKrxItem = krxItems.find((krxItem) => krxItem.ISU_ABBRV === name);
+
+    if (!targetKrxItem) {
+      return;
+    }
+
+    if (prevRecordIndex !== -1) {
+      records.splice(prevRecordIndex, 1, {
+        id: targetDateString,
+        dateTimestamp: dayjs(targetDateString).unix(),
+        value: targetKrxItem[infoType],
+      });
+    } else {
+      records.push({
+        id: targetDateString,
+        dateTimestamp: dayjs(targetDateString).unix(),
+        value: targetKrxItem[infoType],
+      });
+    }
+
+    await setItemsWithDocId(infoType, name, 'records', records);
+
+    return records;
+  });
+
+  return await Promise.all(promises);
+};
+
+// const specialCharactersRegex = /[ \{\}\[\]\/?.,;:|\)*~`!^\-_+┼<>@\#$%&\'\"\\\(\=]/gi;
+
 export async function GET(request: Request) {
   const targetDateString = new URL(request.url).searchParams.get('date')?.split('-').join('-') ?? '';
 
   const { output: krxItems } = await getDataFromKRX(targetDateString);
 
-  const companiesFromKRX = krxItems.map((krxItem) => ({
-    id: krxItem.ISU_ABBRV,
-    name: krxItem.ISU_ABBRV,
-  }));
+  const companiesFromKRX = krxItems
+    .filter((item) => Number(item.PBR) >= 2)
+    .map((krxItem) => ({
+      id: krxItem.ISU_ABBRV,
+      name: krxItem.ISU_ABBRV,
+    }));
 
-  const companiesFromDB = (await getItems('companies')).map((company) => companySchema.parse(company));
+  const companiesFromDB = (await getItems<Company>('companies')).map((company) => companySchema.parse(company));
 
   if (companiesFromKRX.some((company) => !companiesFromDB.some((dbCompany) => dbCompany.name === company.name))) {
     await setItems('companies', companiesFromKRX);
   }
 
-  const [pbrItemsPromiseResult, epsItemsPromiseResult, perItemsPromiseResult] = await Promise.all([
-    getItems(COLLECTION.PBR),
-    getItems(COLLECTION.EPS),
-    getItems(COLLECTION.PER),
-  ]);
-
   const companies = companiesFromKRX;
-  const pbrItems = pbrItemsPromiseResult.map((item) => infoSchema.parse(item));
-  const epsItems = epsItemsPromiseResult.map((item) => infoSchema.parse(item));
-  const perItems = perItemsPromiseResult.map((item) => infoSchema.parse(item));
 
-  const promises: Promise<void>[] = [];
+  // const [pbrItemsPromiseResult, epsItemsPromiseResult, perItemsPromiseResult] = await Promise.all([
+  //   getItems(COLLECTION.PBR),
+  //   getItems(COLLECTION.EPS),
+  //   getItems(COLLECTION.PER),
+  // ]);
+
+  // const pbrItems = pbrItemsPromiseResult.map((item) => infoSchema.parse(item));
+  // const epsItems = epsItemsPromiseResult.map((item) => infoSchema.parse(item));
+  // const perItems = perItemsPromiseResult.map((item) => infoSchema.parse(item));
+
+  // const promises: Promise<void>[] = [];
 
   // const pushPromise = (infoType: InfoType, items: z.infer<typeof krxCrawlingResponseSchema>['output']) => {
   //   promises.push(setItems(`${infoType}/${company.name}`, [{ id: targetDateString, date: targetDateString, value: item[infoType] }]));
   // }
 
-  const getCompanyInfoMap = (companyName: string) => {
-    const companyInfoMap: Record<string, Array<{ date: string, value: string }>> = {}
+  // const companyInfoMap: Record<string, Array<{ date: string, value: string }>> = {}
 
+  // krxItems.forEach((krxItem) => {
+  //   const company = companies.find((company) => company.name === krxItem.ISU_ABBRV);
 
-  }
+  //   // TODO : company가 없는 경우 새로운 company 정보를 추가하는 함수를 구현
+  //   if (!company) {
+  //     return;
+  //   }
 
-  const companyInfoMap: Record<string, Array<{ date: string, value: string }>> = {}
+  //   companyInfoMap[company.name] = companyInfoMap[company.name] ? [...companyInfoMap[company.name], {date: targetDateString, value: krxItem[]}] : [];
 
-  krxItems.forEach((krxItem) => {
-    const company = companies.find((company) => company.name === krxItem.ISU_ABBRV);
+  //   set
 
-    // TODO : company가 없는 경우 새로운 company 정보를 추가하는 함수를 구현
-    if (!company) {
-      return;
-    }
+  //   Object.keys(krxItem).forEach((key) => {
+  //     const company = companies.find((company) => company.name === krxItem.ISU_ABBRV);
+  //     if (!company) {
+  //       return;
+  //     }
 
-    companyInfoMap[company.name] = companyInfoMap[company.name] ? [...companyInfoMap[company.name], {date: targetDateString, value: krxItem[]}] : [];
+  //     if (key === COLLECTION.PBR) {
+  //       promises.push(setItems(`${COLLECTION.PBR}/${company.name}`, [{ id: targetDateString, date: targetDateString, value: krxItem.PBR }]));
+  //     }
 
-    set
+  //     if (key === COLLECTION.PER) {
+  //       const perItem = perItems.find((pbr) => pbr.id === company.id);
 
-    Object.keys(krxItem).forEach((key) => {
-      const company = companies.find((company) => company.name === krxItem.ISU_ABBRV);
-      if (!company) {
-        return;
-      }
+  //       if (perItem) {
+  //         perItem.record[targetDateString] = krxItem.PER;
+  //       } else {
+  //         perItems.push({
+  //           id: company.id,
+  //           record: {
+  //             [targetDateString]: krxItem.PER,
+  //           },
+  //         });
+  //       }
+  //     }
 
-      if (key === COLLECTION.PBR) {
-        promises.push(setItems(`${COLLECTION.PBR}/${company.name}`, [{ id: targetDateString, date: targetDateString, value: krxItem.PBR }]));
-      }
+  //     if (key === COLLECTION.EPS) {
+  //       const epsItem = epsItems.find((pbr) => pbr.id === company.id);
 
-      if (key === COLLECTION.PER) {
-        const perItem = perItems.find((pbr) => pbr.id === company.id);
+  //       if (epsItem) {
+  //         epsItem.record[targetDateString] = krxItem.EPS;
+  //       } else {
+  //         epsItems.push({
+  //           id: company.id,
+  //           record: {
+  //             [targetDateString]: krxItem.EPS,
+  //           },
+  //         });
+  //       }
+  //     }
+  //   });
+  // });
 
-        if (perItem) {
-          perItem.record[targetDateString] = krxItem.PER;
-        } else {
-          perItems.push({
-            id: company.id,
-            record: {
-              [targetDateString]: krxItem.PER,
-            },
-          });
-        }
-      }
+  // await Promise.all([
+  //   setItems(COLLECTION.PBR, pbrItems),
+  //   setItems(COLLECTION.PER, perItems),
+  //   setItems(COLLECTION.EPS, epsItems),
+  // ]);
 
-      if (key === COLLECTION.EPS) {
-        const epsItem = epsItems.find((pbr) => pbr.id === company.id);
-
-        if (epsItem) {
-          epsItem.record[targetDateString] = krxItem.EPS;
-        } else {
-          epsItems.push({
-            id: company.id,
-            record: {
-              [targetDateString]: krxItem.EPS,
-            },
-          });
-        }
-      }
-    });
-  });
-
-  await Promise.all([
-    setItems(COLLECTION.PBR, pbrItems),
-    setItems(COLLECTION.PER, perItems),
-    setItems(COLLECTION.EPS, epsItems),
+  const result = await Promise.all([
+    setCompanyInfo({ infoType: 'PBR', krxItems, companies, targetDateString }),
+    setCompanyInfo({ infoType: 'EPS', krxItems, companies, targetDateString }),
+    setCompanyInfo({ infoType: 'PER', krxItems, companies, targetDateString }),
   ]);
 
-  const data = {
-    pbr: `${pbrItems.length.toLocaleString()}건 수집됨`,
-    per: `${perItems.length.toLocaleString()}건 수집됨`,
-    eps: `${epsItems.length.toLocaleString()}건 수집됨`,
-  };
+  // const data = {
+  //   pbr: `${pbrItems.length.toLocaleString()}건 수집됨`,
+  //   per: `${perItems.length.toLocaleString()}건 수집됨`,
+  //   eps: `${epsItems.length.toLocaleString()}건 수집됨`,
+  // };
 
-  return new Response(JSON.stringify(data));
+  return new Response(JSON.stringify(result), { status: 200 });
 }
 
 // TODO : 회사 데이터가 없는 경우에만 이를 새로 크롤링하는 함수를 구현

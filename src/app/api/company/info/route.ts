@@ -9,4 +9,6 @@ export async function GET(request: Request) {
   }
 
   const item = await getItem(targetInfo.toUpperCase(), companyName);
+
+  return new Response(JSON.stringify(item), { status: 200 });
 }

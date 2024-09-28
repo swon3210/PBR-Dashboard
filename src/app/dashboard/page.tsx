@@ -6,6 +6,8 @@ import Grid from '@mui/material/Unstable_Grid2';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
+import type { Company } from '@/types/companies';
+
 // import { config } from '@/config';
 
 // import { Budget } from '@/components/dashboard/overview/budget';
@@ -29,10 +31,12 @@ import { MainChart } from './MainChart';
 export default function Page() {
   const [page, setPage] = React.useState(0);
 
-  const { data: companyNames = [], isLoading: isCompanyNamesLoading } = useQuery({
+  const { data: companies = [], isLoading: isCompanyNamesLoading } = useQuery({
     queryKey: ['companyNames'],
-    queryFn: () => axios.get<string[]>('/api/company/names').then((data) => data.data),
+    queryFn: () => axios.get<Company[]>('/api/companies').then((data) => data.data),
   });
+
+  const companyNames = companies.map((company) => company.name);
 
   return (
     <Grid container spacing={3}>

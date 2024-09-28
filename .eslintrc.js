@@ -58,6 +58,7 @@ module.exports = {
     ],
 
     // Deactivated
+    'eslint-comments/require-description': 'off', // personal style
     '@typescript-eslint/dot-notation': 'off', // paths are used with a dot notation
     '@typescript-eslint/no-misused-promises': 'off', // onClick with async fails
     '@typescript-eslint/no-non-null-assertion': 'off', // sometimes compiler is unable to detect
